@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | ВЫМПЕЛ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0c12; color: #eef2ff; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 2rem; font-size: 2rem; }
+        .feedback-card { background: #121624; border-radius: 24px; padding: 1.5rem; margin-bottom: 1rem; border-left: 4px solid #ff5e3a; }
+        .feedback-name { font-size: 1.2rem; font-weight: 700; }
+        .feedback-email { color: #ff9a3c; margin: 0.5rem 0; }
+        .feedback-message { background: #1e2235; padding: 1rem; border-radius: 16px; margin: 0.8rem 0; }
+        .feedback-date { font-size: 0.8rem; color: #8b93b0; }
+        .delete-feedback { background: none; border: none; color: #ff7a5c; cursor: pointer; margin-top: 0.5rem; }
+        .empty { text-align: center; padding: 3rem; color: #8b93b0; }
+        .btn-logout { background: #ff3b1d; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 40px; cursor: pointer; margin-bottom: 1rem; }
+        .stats { background: #1e2235; padding: 1rem; border-radius: 20px; margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1><i class="fas fa-envelope"></i> Заявки из формы обратной связи</h1>
+    <div id="adminPanel">
+        <div id="loginForm">
+            <input type="password" id="adminPassword" placeholder="Введите пароль администратора" style="padding: 1rem; border-radius: 40px; border: none; width: 300px; margin-right: 1rem;">
+            <button id="loginBtn" class="btn-logout" style="display: inline-block;">Войти</button>
+        </div>
+        <div id="feedbacksList" style="display: none;">
+            <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+            <div class="stats" id="stats"></div>
+            <div id="feedbacksContainer"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ADMIN_PASSWORD = "VympelAdmin2026";
+    
+    function loadFeedbacks() {
+        return JSON.parse(localStorage.getItem('vympel_feedbacks') || '[]');
+    }
+    
+    function saveFeedbacks(feedbacks) {
+        localStorage.setItem('vympel_feedbacks', JSON.stringify(feedbacks));
+    }
+    
+    function renderFeedbacks() {
+        let feedbacks = loadFeedbacks();
+        let container = document.getElementById('feedbacksContainer');
+        let statsDiv = document.getElementById('stats');
+        
+        if(feedbacks.length === 0) {
+            container.innerHTML = '<div class="empty"><i class="fas fa-inbox"></i> Пока нет заявок</div>';
+            statsDiv.innerHTML = '📊 Всего заявок: 0';
+            return;
+        }
+        
+        statsDiv.innerHTML = `📊 Всего заявок: ${feedbacks.length}`;
+        container.innerHTML = feedbacks.map(f => `
+            <div class="feedback-card" data-id="${f.id}">
+                <div class="feedback-name"><i class="fas fa-user"></i> ${escapeHtml(f.name)}</div>
+                <div class="feedback-email"><i class="fas fa-envelope"></i> ${escapeHtml(f.email)}</div>
+                <div class="feedback-message">${escapeHtml(f.message)}</div>
+                <div class="feedback-date"><i class="fas fa-calendar"></i> ${f.date}</div>
+                <button class="delete-feedback" data-id="${f.id}"><i class="fas fa-trash"></i> Удалить заявку</button>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.delete-feedback').forEach(btn => {
+            btn.addEventListener('click', function() {
+                let id = parseInt(this.dataset.id);
+                let newFeedbacks = loadFeedbacks().filter(f => f.id !== id);
+                saveFeedbacks(newFeedbacks);
+                renderFeedbacks();
+            });
+        });
+    }
+    
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m];
+        });
+    }
+    
+    document.getElementById('loginBtn').addEventListener('click', function() {
+        let pwd = document.getElementById('adminPassword').value;
+        if(pwd === ADMIN_PASSWORD) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('feedbacksList').style.display = 'block';
+            renderFeedbacks();
+        } else {
+            alert('Неверный пароль!');
+        }
+    });
+    
+    document.getElementById('logoutBtn')?.addEventListener('click', function() {
+        document.getElementById('loginForm').style.display = 'block';
+        document.getElementById('feedbacksList').style.display = 'none';
+        document.getElementById('adminPassword').value = '';
+    });
+</script>
+</body>
+</html>
